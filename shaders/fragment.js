@@ -6,10 +6,10 @@ uniform vec3 lightPosition;
 uniform sampler2D noise;
 
 #define MIN_DIST 1.
+#define SC 250.
+#define FAR_DIST 5.0*SC
 #define NUM_STEPS 300
 #define SHADOW_STEPS 64
-#define SC 250.
-#define FAR_DIST 5000.0*SC
 #define PI 3.14159
 
 #define SHADOW_SOFTNESS 40.0
@@ -38,7 +38,7 @@ mat3 rotationMatrix3(vec3 axis, float angle)
 vec3 noised(vec2 x) {
     vec2 f = fract(x);
 
-    // Smooth noise from higher level equation
+    // Smooth noise using higher level equation
     vec2 u = f*f*f*(f*(f*6.0-15.0)+10.0);
     vec2 du = 30.0*f*f*(f*(f-2.0)+1.0);
 
@@ -82,22 +82,23 @@ float terrainH( in vec2 x )
 }
 
 float terrainM(vec2 x) {
-    // return 1.;
-    vec2  p = x*0.003/SC;
-    float a = 0.0;
-    float b = 1.0;
-    vec2  d = vec2(0.0);
+    return 5. * cos(x.y * 0.1);
 
-    for( int i=0; i<9; i++ )
-    {
-        vec3 n = noised(p);
-        d += n.yz;
-        a += b*n.x/(1.0+dot(d,d));
-        b *= 0.5;
-        p = m2*p*2.0;
-    }
-    a *= 0.9;
-    return SC*120.0*a;
+    // vec2  p = x*0.003/SC;
+    // float a = 0.0;
+    // float b = 1.0;
+    // vec2  d = vec2(0.0);
+
+    // for( int i=0; i<1; i++ )
+    // {
+    //     vec3 n = noised(p);
+    //     d += n.yz;
+    //     a += b*n.x/(1.0+dot(d,d));
+    //     b *= 0.5;
+    //     p = m2*p*2.0;
+    // }
+    // a *= 0.9;
+    // return SC*a;
 }
 
 vec3 calcNormal( in vec3 pos, float t )
@@ -108,13 +109,10 @@ vec3 calcNormal( in vec3 pos, float t )
                             terrainH(pos.xz-eps.yx) - terrainH(pos.xz+eps.yx) ) );
 }
 
-vec3 calcNormal(vec3 pos) {
-    return calcNormal(pos, 0.001);
-}
-
 vec3 getCamPosition() {
     return vec3(cameraTransform[3][0], cameraTransform[3][1], cameraTransform[3][2]);
 }
+
 mat3 getCamRotationMat() {
     mat3 rot = mat3(0.);
     for (int x = 0; x < 3; ++x) {
@@ -130,9 +128,9 @@ float raycast(vec3 p, vec3 dir, float tmin, float tmax) {
     vec3 pos = p;
     for (int i = 0; i < NUM_STEPS; ++i) {
         pos = p + dir * t;
-        float h = pos.y - terrainM(p.xz);
-        if (abs(h) < (0.0015*t) || t>tmax) break;
-        t += 0.4*h;
+        float h = pos.y - fbm(pos.xz);
+        if (abs(h) < (0.0015*t) || t > tmax) break;
+        t += 0.3*h;
     }
     return t;
 }
@@ -143,16 +141,12 @@ void main( void ) {
 	vec2 uv = ( gl_FragCoord.xy / resolution.xy ) * 2.0 - 1.0;
 	uv.x *= resolution.x / resolution.y;
  
- 
+
     // set camera position and direction
 
 	vec3 ro = getCamPosition();
     mat3 cameraRot = getCamRotationMat();
 	vec3 rd = cameraRot * normalize( vec3( uv, -1. ) );
- 
-    // raymarch
-	// vec3 final = rayMarch(pos, dir, false);
-    // vec2 val = sdf(final, false);
 
     float maxh = 250.0*SC;
     float tp = (maxh-ro.y)/rd.y;
@@ -185,7 +179,7 @@ void main( void ) {
     else
     {
         vec3 pos = ro + t*rd;
-        col = calcNormal(pos, t);
+        col = vec3(cos(pos.z), sin(pos.z), .5);//calcNormal(pos, MIN_DIST);
     }
 
     // calc normals

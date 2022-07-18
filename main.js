@@ -17,9 +17,9 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 
-camera.position.setX(1000);
+camera.position.setX(10);
 // camera.position.setZ(2000);
-camera.position.setY(0);
+camera.position.setY(10);
 
 function createMesh() {
   const geometry = new t3.PlaneGeometry(2, 2);
