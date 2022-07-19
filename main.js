@@ -17,9 +17,9 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 
-camera.position.setX(50);
+camera.position.setX(100);
 camera.position.setY(50);
-camera.lookAt(0., 100., 0.);
+camera.lookAt(0., 0., 0.);
 // camera.position.setZ(2000);
 
 var heightMap = new t3.TextureLoader().load( 'images/heightmapblur.png' );
@@ -31,7 +31,7 @@ heightMap.generateMipmaps = true;
 // heightMap.anisotropy = 16;
 
 function createMesh() {
-  const geometry = new t3.PlaneBufferGeometry(2, 2);
+  const geometry = new t3.PlaneBufferGeometry(1, 1);
   const material = new t3.ShaderMaterial({
     fragmentShader: fragment,
     vertexShader: vertex,
