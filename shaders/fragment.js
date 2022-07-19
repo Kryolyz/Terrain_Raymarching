@@ -3,11 +3,12 @@ uniform vec2 resolution;
 uniform float time;
 uniform mat4 cameraTransform;
 uniform vec3 lightPosition;
+uniform sampler2D heightmap;
 uniform sampler2D noise;
 
 #define MIN_DIST 1.
 #define SC 250.
-#define FAR_DIST 5.0*SC
+#define FAR_DIST 15.0*SC
 #define NUM_STEPS 300
 #define SHADOW_STEPS 64
 #define PI 3.14159
@@ -35,22 +36,6 @@ mat3 rotationMatrix3(vec3 axis, float angle)
                 oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c          );
 }
 
-vec3 noised(vec2 x) {
-    vec2 f = fract(x);
-
-    // Smooth noise using higher level equation
-    vec2 u = f*f*f*(f*(f*6.0-15.0)+10.0);
-    vec2 du = 30.0*f*f*(f*(f-2.0)+1.0);
-
-    vec2 p = floor(x);
-	float a = textureLod( noise, (p+vec2(0.5,0.5))/256.0, 0.0 ).x;
-	float b = textureLod( noise, (p+vec2(1.5,0.5))/256.0, 0.0 ).x;
-	float c = textureLod( noise, (p+vec2(0.5,1.5))/256.0, 0.0 ).x;
-	float d = textureLod( noise, (p+vec2(1.5,1.5))/256.0, 0.0 ).x;
-    return vec3(a+(b-a)*u.x+(c-a)*u.y+(a-b-c+d)*u.x*u.y,
-				du*(vec2(b-a,c-a)+(a-b-c+d)*u.yx));
-}
-
 mat2 m2 = mat2(0.8,-0.6,0.6,0.8);
 float fbm( vec2 p )
 {
@@ -62,51 +47,61 @@ float fbm( vec2 p )
     return f/0.9375;
 }
 
-float terrainH( in vec2 x )
-{
-	vec2  p = x*0.003/SC;
-    float a = 0.0;
-    float b = 1.0;
-	vec2  d = vec2(0.0);
-    for( int i=0; i<16; i++ )
-    {
-        vec3 n = noised(p);
-        d += n.yz;
-        a += b*n.x/(1.0+dot(d,d));
-		b *= 0.5;
-        p = m2*p*2.0;
-    }
+float terrain(vec2 p) {
+    // vec2 pos = p;
+    float lod = 1.;
+    vec2 heightmapDimensions = vec2(textureSize(heightmap, int(3)));
 
-    a *= 0.9;
-	return SC*120.0*a;
-}
+    // do bilinear interpolation on texture
 
-float terrainM(vec2 x) {
-    return 5. * cos(x.y * 0.1);
-
-    // vec2  p = x*0.003/SC;
-    // float a = 0.0;
-    // float b = 1.0;
-    // vec2  d = vec2(0.0);
-
-    // for( int i=0; i<1; i++ )
+    float value = textureLod( heightmap, (p + heightmapDimensions / 2.) / 256., lod ).x;
+    float res = 0.;
+    // vec2 pos = vec2(0.);
+    // float buffer = 0.;
+    // for (int x = -1; x <= 1; ++x)
     // {
-    //     vec3 n = noised(p);
-    //     d += n.yz;
-    //     a += b*n.x/(1.0+dot(d,d));
-    //     b *= 0.5;
-    //     p = m2*p*2.0;
+    //     for (int y = -1; y <= 1; ++y) {
+    //         // if (x == 0 && y == 0) continue;
+            
+    //         vec2 pos = p + 0.25*vec2(x,y);
+    //         buffer += textureLod( heightmap, (pos + heightmapDimensions / 2.) / 256., lod).x / 9.;
+    //     }
     // }
-    // a *= 0.9;
-    // return SC*a;
+    res = value;
+    // pos.x += 1.;
+    // float x_1 = textureLod( heightmap, (pos + heightmapDimensions / 2.) / 256., lod ).x;
+
+    // pos.x -= 1.;
+    // float x_2 = textureLod( heightmap, (pos + heightmapDimensions / 2.) / 256., lod ).x;
+    
+    // pos.x += 2.;
+    // pos.y -= 1.;
+    // float y_1 = textureLod( heightmap, (pos + heightmapDimensions / 2.) / 256., lod ).x;
+    
+    // pos.y += 2.;
+    // float y_2 = textureLod( heightmap, (pos + heightmapDimensions / 2.) / 256., lod ).x;
+
+    // pos.y -= 1.;
+    // float value = textureLod( heightmap, (p + heightmapDimensions / 2.) / 256., lod ).x;
+
+    // value += (( x_2 - x_1) + ( y_2 - y_1)) / 4.0;
+    return res * 80.;
 }
 
 vec3 calcNormal( in vec3 pos, float t )
 {
     vec2  eps = vec2( 0.001*t, 0.0 );
-    return normalize( vec3( terrainH(pos.xz-eps.xy) - terrainH(pos.xz+eps.xy),
+    return normalize( vec3( terrain(pos.xz-eps.xy) - terrain(pos.xz+eps.xy),
                             2.0*eps.x,
-                            terrainH(pos.xz-eps.yx) - terrainH(pos.xz+eps.yx) ) );
+                            terrain(pos.xz-eps.yx) - terrain(pos.xz+eps.yx) ) );
+}
+
+vec3 calcNormalFBM( in vec3 pos, float t )
+{
+    vec2  eps = vec2( 0.001*t, 0.0 );
+    return normalize( vec3( fbm(pos.xz-eps.xy) - fbm(pos.xz+eps.xy),
+                            2.0*eps.x,
+                            fbm(pos.xz-eps.yx) - fbm(pos.xz+eps.yx) ) );
 }
 
 vec3 getCamPosition() {
@@ -128,7 +123,7 @@ float raycast(vec3 p, vec3 dir, float tmin, float tmax) {
     vec3 pos = p;
     for (int i = 0; i < NUM_STEPS; ++i) {
         pos = p + dir * t;
-        float h = pos.y - fbm(pos.xz);
+        float h = pos.y - terrain(pos.xz);
         if (abs(h) < (0.0015*t) || t > tmax) break;
         t += 0.3*h;
     }
@@ -179,7 +174,8 @@ void main( void ) {
     else
     {
         vec3 pos = ro + t*rd;
-        col = vec3(cos(pos.z), sin(pos.z), .5);//calcNormal(pos, MIN_DIST);
+        // vec3(cos(pos.z), sin(pos.z), .5);//
+        col = calcNormal(pos, t);
     }
 
     // calc normals

@@ -17,12 +17,21 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 
-camera.position.setX(10);
+camera.position.setX(50);
+camera.position.setY(50);
+camera.lookAt(0., 100., 0.);
 // camera.position.setZ(2000);
-camera.position.setY(10);
+
+var heightMap = new t3.TextureLoader().load( 'images/heightmapblur.png' );
+// heightMap.wrapS = t3.RepeatWrapping;
+// heightMap.wrapT = t3.RepeatWrapping;
+heightMap.magFilter = t3.LinearFilter;
+heightMap.minFilter = t3.LinearFilter;
+heightMap.generateMipmaps = true;
+// heightMap.anisotropy = 16;
 
 function createMesh() {
-  const geometry = new t3.PlaneGeometry(2, 2);
+  const geometry = new t3.PlaneBufferGeometry(2, 2);
   const material = new t3.ShaderMaterial({
     fragmentShader: fragment,
     vertexShader: vertex,
@@ -31,7 +40,8 @@ function createMesh() {
       resolution:{ type:"v2", value:new t3.Vector2( window.innerWidth, window.innerHeight) },
       cameraTransform:{type:"mat4", value: camera.matrixWorld},
       lightPosition:{type:"vec3", value: new Vector3(0.)},
-      noise:{type:"t", value: new t3.TextureLoader().load( 'images/noisest.png' )}
+      noise:{type:"t", value: new t3.TextureLoader().load( 'images/noisest.png' )},
+      heightmap:{type:"t", value: heightMap}
             }
     , side: t3.DoubleSide});
   const mesh = new t3.Mesh(geometry, material);
