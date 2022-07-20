@@ -82,15 +82,15 @@ float terrain(vec2 p) {
     float t = 0.;
 
     float value = 0.;
-    float factor = 1.0;
+    float factor = 2.0;
     float frequency = 1.0;
-    for (int i = 1; i <= 5; ++i) {
-        value += factor * perlin(p, frequency / 256., t);
+    for (int i = 1; i <= 6; ++i) {
+        value += factor * perlin(p, frequency / 512., t);
         factor /= 4.0;
         frequency *= 4.0;
     } 
-    value = pow(abs(value), 1.5);
-    return value * 80.;
+    value = pow(abs(value), 1.8);
+    return value * 40.;
 }
 
 vec3 calcNormal( in vec3 pos, float t )
@@ -127,6 +127,21 @@ float raycast(vec3 p, vec3 dir, float tmin, float tmax) {
     return t;
 }
 
+float castShadows(vec3 p, vec3 dir, float dis) {
+    float minStep = clamp(dis*0.01,SC*0.5,SC*50.0);
+    float res = 1.0;
+    float t = 0.001;
+	for( int i=0; i<80; i++ )
+	{
+	    vec3 pos = p + t*dir;
+        float h = p.y - terrain( p.xz );
+		res = min( res, 24.0*h/t );
+		t += max(minStep,h);
+		if( res<0.01 || p.y>(SC*200.0) ) break;
+	}
+	return clamp( res, 0.0, 1.0 );
+}
+
 void main( void ) {
  
     // get screen uv's
@@ -134,14 +149,15 @@ void main( void ) {
 	uv.x *= resolution.x / resolution.y;
  
     // set camera position and direction
-
 	vec3 ro = getCamPosition();
 
     float terrainHeight = terrain(ro.xz);
     ro.y = terrainHeight + 10.0;
 
+
     mat3 cameraRot = getCamRotationMat();
-	vec3 rd = cameraRot * normalize( vec3( uv, -1. ) );
+	vec3 rd = cameraRot * normalize( vec3( uv, - 1. ) );
+
 
     float maxh = 250.0*SC;
     float tp = (maxh-ro.y)/rd.y;
@@ -174,8 +190,14 @@ void main( void ) {
     else
     {
         vec3 pos = ro + t*rd;
-        // vec3(cos(pos.z), sin(pos.z), .5);//
-        col = calcNormal(pos, t);
+
+        vec3 light1 = normalize(vec3(1., 1., 0.));
+        vec3 normal = calcNormal(pos,t);
+        float light = clamp( dot(normal, light1), 0., 1.);
+        float shadows = 1.;
+        if (light > 0.001)
+            shadows = castShadows(pos+light1*SC*0.05, light1, t);
+        col =  vec3(8.00,5.00,3.00) * light * shadows;
     }
 
     // calc normals
