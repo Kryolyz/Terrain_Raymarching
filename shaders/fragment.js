@@ -84,12 +84,12 @@ float terrain(vec2 p) {
     float value = 0.;
     float factor = 2.0;
     float frequency = 1.0;
-    for (int i = 1; i <= 6; ++i) {
+    for (int i = 1; i <= 5; ++i) {
         value += factor * perlin(p, frequency / 512., t);
         factor /= 4.0;
         frequency *= 4.0;
     } 
-    value = pow(abs(value), 1.8);
+    value = pow(abs(value), 2.);
     return value * 40.;
 }
 
@@ -191,13 +191,17 @@ void main( void ) {
     {
         vec3 pos = ro + t*rd;
 
-        vec3 light1 = normalize(vec3(1., 1., 0.));
+        vec3 light1 = normalize(lightPosition);
         vec3 normal = calcNormal(pos,t);
         float light = clamp( dot(normal, light1), 0., 1.);
         float shadows = 1.;
         if (light > 0.001)
             shadows = castShadows(pos+light1*SC*0.05, light1, t);
         col =  vec3(8.00,5.00,3.00) * light * shadows;
+
+        float fo = 1.0-exp(-pow(0.05*t/SC,1.5) );
+        vec3 fco = 0.65*vec3(0.4,0.65,1.0);
+        col = mix(col, fco, fo);
     }
 
     // calc normals

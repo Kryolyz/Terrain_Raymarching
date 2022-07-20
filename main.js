@@ -26,7 +26,7 @@ cameraRaymarching.position.setX(0);
 cameraRaymarching.position.setY(50);
 cameraRaymarching.position.setZ(0);
 cameraRaymarching.lookAt(0., 0., 1.);
-const controls = new FirstPersonControls(cameraRaymarching, renderer.domElement);
+const controls = new myController(cameraRaymarching, renderer.domElement);
 controls.movementSpeed = 200.;
 controls.lookSpeed = 1.0;
 
@@ -73,10 +73,10 @@ function animate() {
   controls.update(1. / fps);
   // myControls.update(1. / fps);
 
-  if (time % 60 == 0)
-  {
-    console.debug(cameraRaymarching.position);
-  }
+  // if (time % 60 == 0)
+  // {
+  //   console.debug(cameraRaymarching.position);
+  // }
     
 
   // plane.quaternion.copy(camera.quaternion);
@@ -85,7 +85,7 @@ function animate() {
   plane.material.uniforms.time.value = time;
   plane.material.uniforms.cameraTransform.value = cameraRaymarching.matrixWorld;
   // plane.material.uniforms.lightPosition.value = new Vector3(35. * Math.cos(time*0.005), 500., 35. * Math.sin(time*0.005))
-  plane.material.uniforms.lightPosition.value = new Vector3(0., 500., 0.)
+  plane.material.uniforms.lightPosition.value = new Vector3(2., 1., 0.)
 
   if (Math.cos(time * 0.005) == 1) {
     time = 0;

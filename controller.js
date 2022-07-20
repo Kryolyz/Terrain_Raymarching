@@ -254,7 +254,9 @@ class myController {
 				}
 
 				lon -= this.mouseX * actualLookSpeed;
-				if ( this.lookVertical ) lat -= this.mouseY * actualLookSpeed * verticalLookRatio;
+        // this.mouseX -= 0.1*this.mouseX;
+				lat -= this.mouseY * actualLookSpeed * verticalLookRatio;
+        // this.mouseY -= 0.1*this.mouseY;
 
 				lat = Math.max( - 85, Math.min( 85, lat ) );
 
