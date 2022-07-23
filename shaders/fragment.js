@@ -47,10 +47,10 @@ float perlin(vec2 p, float dim, float time) {
 	vec2 posy = pos + vec2(0.0, 1.0);
 	vec2 posxy = pos + vec2(1.0);
 	
-	float c = rand(pos, dim, time);
-	float cx = rand(posx, dim, time);
-	float cy = rand(posy, dim, time);
-	float cxy = rand(posxy, dim, time);
+	float c = rand(pos);
+	float cx = rand(posx);
+	float cy = rand(posy);
+	float cxy = rand(posxy);
 	
 	vec2 d = fract(p * dim);
 	d = -0.5 * cos(d * PI) + 0.5;
@@ -197,7 +197,8 @@ void main( void ) {
         float shadows = 1.;
         if (light > 0.001)
             shadows = castShadows(pos+light1*SC*0.05, light1, t);
-        col =  vec3(8.00,5.00,3.00) * light * shadows;
+        // vec3 ambient = 
+        col = vec3(8.00,5.00,3.00) * light * shadows;
 
         float fo = 1.0-exp(-pow(0.05*t/SC,1.5) );
         vec3 fco = 0.65*vec3(0.4,0.65,1.0);
